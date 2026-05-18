@@ -1,29 +1,37 @@
 import requests
 import json
 
-# URL da sua API local (ou o link do ngrok se estiver testando remotamente)
+# URL da sua API local
 url = "http://127.0.0.1:8000/prever_rastreio_geo"
 
-# Dados de exemplo (passa json)
+# Dados de exemplo do Conjunto 2 (Idênticos ao sucesso do teste local)
 dados_navio = {
-    "sealine": "Maersk",
-    "size_type": "40' High Cube Dry",
-    "timestamp_utc": "2025-07-27T00:25:00+00:00",
-    "event_desc": "Load",
-    "port_name": "Santos",
-    "current_lat": -23.9608,
-    "current_lon": -46.3336,
-    "dest_lat": -3.1019,
-    "dest_lon": -60.0250
+    "sealine": "Evergreen",
+    "size_type": "20' Dry Standard",
+    "timestamp_utc": "2025-05-26T16:00:00+00:00",
+    "event_desc": "Empty pick-up by merchant haulage",
+    "port_name": "Kaohsiung",
+    "current_lat": 22.61626,
+    "current_lon": 120.31333,
+    "dest_lat": -26.90778,
+    "dest_lon": -48.66194
 }
 
 try:
+    print("🚀 Enviando dados para a API...")
     response = requests.post(url, json=dados_navio)
+    
     if response.status_code == 200:
+        resultado = response.json()
+        print("\n================ RESPOSTA DA API ================")
         print("✅ Sucesso!")
-        print(f"Previsão do Modelo: {response.json()['previsao']}")
+        print(f"🤖 Versão utilizada: {resultado.get('modelo_versao')}")
+        # Ajustado para ler a nova chave do api.py
+        print(f"⏱️ Tempo restante estimado: {resultado['previsao_horas_restantes']:.2f} horas")
+        print("=================================================")
     else:
-        print(f"❌ Erro na API: {response.status_code}")
+        print(f"\n❌ Erro na API: {response.status_code}")
         print(response.json())
+        
 except Exception as e:
-    print(f"❌ Falha ao conectar na API: {e}")
+    print(f"\n❌ Falha ao conectar na API: {e}")

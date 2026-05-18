@@ -43,26 +43,6 @@ try:
 except Exception as e:
     print(f"Erro ao carregar arquivos de modelo: {e}")
 
-# BLOCO 2: Modelo de Rastreio GEO (Pickle)
-# 2. Carregamento do Modelo Geográfico ()
-try:
-    # TENTATIVA: Carregamento via Joblib 
-    raw_model = joblib.load('shipment_predictor_v1.pkl')
-    modelos["shipment_geo"] = raw_model
-    print("✅ Modelo Geográfico carregado com sucesso!")
-except AttributeError as e:
-    if "dtype" in str(e):
-        print("⚠️ Erro de versão detectado. Tentando modo de compatibilidade...")
-        # Se falhar o objeto inteiro, tentamos carregar apenas a 'inteligência'
-        try:
-            with open('shipment_predictor_v1.pkl', 'rb') as f:
-                # O XGBoost tem uma função interna para tentar ler binários de pickle
-                modelos["shipment_geo"] = pickle.load(f)
-            print("✅ Modelo Geográfico carregado (via Pickle fallback)!")
-        except:
-            print("❌ Não foi possível carregar o modelo GEO devido a incompatibilidade de versão.")
-except Exception as e:
-    print(f"❌ Erro persistente no modelo GEO: {e}")
 
 # ============================================================
 # ROTAS JSON (SISTEMAS EXTERNOS)
@@ -190,28 +170,29 @@ async def prever_por_linha(
         return JSONResponse(status_code=500, content={"erro": str(e)})
     
 # ============================================================
-# ROTAS Geo (MANTIDAS PARA COMPATIBILIDADE)
+# ROTAS Geo (ATUALIZADAS PARA A VERSÃO V2 - COLAB)
 # ============================================================
-    
+from processamento_geo import preparar_dados_para_shipment
+
 @app.post("/prever_rastreio_geo", tags=["Logística Avançada - GEO"])
 async def prever_rastreio_geo(dados: Dict):
     try:
-        conteudo_pkl = modelos["shipment_geo"]
+        # 1. Processamento dos dados (A função V2 agora retorna a matriz X e o modelo XGB carregado)
+        df_processado, modelo_real = preparar_dados_para_shipment(dados)
         
-        # 1. Extração correta baseada no seu DEBUG
-        # O modelo real está guardado na chave 'classifier'
-        modelo_real = conteudo_pkl['classifier']
-        
-        # 2. Processamento dos dados (via sua função no outro arquivo)
-        df_processado = preparar_dados_para_shipment(dados)
-        
-        # 3. Predição
+        # 2. Executa a predição com o modelo v2 do Colab
         predicao = modelo_real.predict(df_processado)
         
+        # 3. Retorna o resultado em horas restando para o destino
         return {
             "status": "Sucesso",
-            "previsao": float(predicao[0])
+            "modelo_versao": "V2_Colab",
+            "previsao_horas_restantes": float(predicao[0])
         }
+        
+    except RuntimeError as re:
+        # Captura especificamente o erro caso o arquivo .pkl não tenha sido encontrado ao iniciar
+        return JSONResponse(status_code=503, content={"erro": str(re)})
     except Exception as e:
-        print(f"Erro na predição GEO: {e}")
+        print(f"Erro na predição GEO V2: {e}")
         return JSONResponse(status_code=500, content={"erro": str(e)})
