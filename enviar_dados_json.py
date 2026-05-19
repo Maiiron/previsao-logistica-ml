@@ -1,35 +1,52 @@
 import requests
 import json
 
-# 1. Use o endereço LOCAL se estiver no VS Code com a API ligada
-# Se for usar no Colab, troque para a URL do Ngrok
-URL_API = "http://127.0.0.1:8000/prever_rastreio_geo"
+# 1. URL CORRIGIDA: Incluindo o parâmetro de consulta exigido pela API (modelo_escolhido=xgboost)
+URL_API = "http://127.0.0.1:8000/prever_situacao_json?modelo_escolhido=xgboost"
 
-# 2. enviar dados json
-dados_navio = { #exemplo
-    "sealine": "Maersk",
-    "size_type": "40' High Cube Dry",
-    "timestamp_utc": "2025-07-27T00:25:00+00:00",
-    "event_desc": "Load",
-    "port_name": "Santos",
-    "current_lat": -23.96083,
-    "current_lon": -46.33361,
-    "dest_lat": -3.10194,
-    "dest_lon": -60.025
+# 2. Payload exato copiado do sucesso do seu Swagger
+json_bruto_sucesso = """
+{
+    "Ano":2023,
+        "Processo":3430,
+        "Modal":"AEREO",
+        "safra_semana":null,
+        "Safra_mes":null,
+        "Data Cria\u00e7ao":1681171200000,
+        "Origem":"SINGAPORE",
+        "Destino":"GUARULHOS",
+        "Data Embarque":1681257600000,
+        "Agente de Carga":"AIR FRANCE",
+        "Data Chegada":1681862400000,
+        "Data DI":1682294400000,
+        "Data CI":1682294400000,
+        "Data Desembara\u00e7o":1682353020000,
+        "EntregaPrevista":1681862400000,
+        "DataEntrega":1682380800000,
+        "Prioridade":1682338620000,
+        "Chegada":1681862400000,
+        "Data Presen\u00e7a Carga":null,
+        "Data Libera\u00e7\u00e3o":1682294400000,
+        "Canal":"Verde"
 }
+"""
 
-def enviar_teste_geo():
+# Converte o bloco de texto JSON em um dicionário Python estruturado corretamente
+dados_logistica = json.loads(json_bruto_sucesso)
+
+def enviar_teste_logistica_json():
     try:
-        print(f"🚀 Enviando dados para o modelo GEO em: {URL_API}")
-        
-        # O segredo: passamos 'json=dados_navio' para que o requests
-        # converta o dicionário no formato que a API entende.
-        response = requests.post(URL_API, json=dados_navio)
+        print(f"🚀 Enviando dados JSON oficiais para o MODELO 1...")
+        response = requests.post(URL_API, json=dados_logistica)
 
         if response.status_code == 200:
             resultado = response.json()
-            print("\n✅ Sucesso!")
-            print(f"🔮 Resultado da Previsão: {resultado.get('previsao')}")
+            print("\n================ RESPOSTA DA API (MODELO 1) ================")
+            print("✅ Sucesso!")
+            print(f"📋 Status do Retorno: {resultado.get('status')}")
+            # Ajustado para ler a chave real identificada na imagem: 'previsao_dias'
+            print(f"⏱️ Previsão calculada pelo XGBoost: {resultado.get('previsao_days', resultado.get('previsao_dias'))} dias")
+            print("============================================================")
         else:
             print(f"\n❌ Erro na API (Status {response.status_code})")
             print(f"Detalhe do erro: {response.text}")
@@ -38,4 +55,4 @@ def enviar_teste_geo():
         print(f"\n❌ Erro ao conectar: {e}")
 
 if __name__ == "__main__":
-    enviar_teste_geo()
+    enviar_teste_logistica_json()
