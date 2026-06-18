@@ -1,37 +1,57 @@
 import requests
 import json
 
-# URL da sua API local
-url = "http://127.0.0.1:8000/prever_rastreio_geo"
+# 1. URL CORRIGIDA: Apontando para a rota geográfica da sua API
+URL_API = "http://127.0.0.1:8000/prever_rastreio_geo"
 
-# Dados de exemplo do Conjunto 2 (Idênticos ao sucesso do teste local)
-dados_navio = {
-    "sealine": "Evergreen",
-    "size_type": "20' Dry Standard",
-    "timestamp_utc": "2025-05-26T16:00:00+00:00",
-    "event_desc": "Empty pick-up by merchant haulage",
-    "port_name": "Kaohsiung",
-    "current_lat": 22.61626,
-    "current_lon": 120.31333,
-    "dest_lat": -26.90778,
-    "dest_lon": -48.66194
+# ====== ADICIONADO: CABEÇALHO DE SEGURANÇA ======
+HEADERS_SEGURANCA = {
+    "X-API-Key": "Cometrix123"  # <-- Mesma senha definida na API
 }
+# ================================================
 
-try:
-    print("🚀 Enviando dados para a API...")
-    response = requests.post(url, json=dados_navio)
-    
-    if response.status_code == 200:
-        resultado = response.json()
-        print("\n================ RESPOSTA DA API ================")
-        print("✅ Sucesso!")
-        print(f"🤖 Versão utilizada: {resultado.get('modelo_versao')}")
-        # Ajustado para ler a nova chave do api.py
-        print(f"⏱️ Tempo restante estimado: {resultado['previsao_horas_restantes']:.2f} horas")
-        print("=================================================")
-    else:
-        print(f"\n❌ Erro na API: {response.status_code}")
-        print(response.json())
+# 2. Payload geográfico (Exemplo de coordenadas/rastreio do seu Swagger)
+json_geo_sucesso = """
+{
+  "sealine": "Maersk",
+  "size_type": "40' High Cube Dry",
+  "timestamp_utc": "2025-08-19T00:56:00+00:00",
+  "event_desc": "Vessel departure",
+  "port_name": "Pecem",
+  "current_lat": -3.54806,
+  "current_lon": -38.82972,
+  "dest_lat": -3.10194,
+  "dest_lon": -60.025
+}
+"""
+# Converte o bloco de texto JSON em um dicionário Python estruturado corretamente
+dados_geo = json.loads(json_geo_sucesso)
+
+def enviar_teste_logistica_geo():
+    try:
+        print(f"🚀 Enviando dados GEOGRÁFICOS oficiais para o MODELO 2...")
         
-except Exception as e:
-    print(f"\n❌ Falha ao conectar na API: {e}")
+        # ====== ALTERAÇÃO: Incluído o parâmetro headers=HEADERS_SEGURANCA ======
+        response = requests.post(URL_API, json=dados_geo, headers=HEADERS_SEGURANCA)
+        # =======================================================================
+
+        if response.status_code == 200:
+            resultado = response.json()
+            print("\n================ RESPOSTA DA API (MODELO 2 - GEO) ================")
+            print("✅ Sucesso!")
+            print(f"📋 Status do Retorno: {resultado.get('status', 'Sucesso')}")
+            # Adapte as chaves abaixo caso o retorno do seu modelo geo use nomes diferentes
+            print(f"⏱️ Previsão calculada via Geo/Haversine: {resultado.get('previsao_dias')} dias")
+            print("==================================================================")
+            # Para isso (mostra tudo que a API devolveu):
+            print("DADOS BRUTOS DA API:", resultado)
+            
+        else:
+            print(f"\n❌ Erro na API (Status {response.status_code})")
+            print(f"Detalhe do erro: {response.text}")
+
+    except Exception as e:
+        print(f"\n❌ Erro ao conectar: {e}")
+
+if __name__ == "__main__":
+    enviar_teste_logistica_geo()

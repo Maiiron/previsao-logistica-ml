@@ -1,12 +1,19 @@
-#esse gera um novo excel com os resultados
+# esse gera um novo excel com os resultados
 
 import requests
 import pandas as pd
 
 # --- CONFIGURAÇÕES ---
-URL_API = "https://awilda-unfrayed-obliviously.ngrok-free.dev/" # link da pagina API
+# Ajustado para localhost para o seu teste local atual
+URL_API = "http://127.0.0.1:8000" 
 ARQUIVO_ENTRADA = "teste_micro_1.xlsx"
 ARQUIVO_SAIDA = "previsoes_finais.xlsx"
+
+# ====== ADICIONADO: CABEÇALHO DE SEGURANÇA ======
+HEADERS_SEGURANCA = {
+    "X-API-Key": "Cometrix123"  # <-- Mesma senha definida na API
+}
+# ================================================
 
 def solicitar_previsao():
     print(f"🚀 Lendo arquivo: {ARQUIVO_ENTRADA}")
@@ -20,7 +27,14 @@ def solicitar_previsao():
             arquivos = {"file": (ARQUIVO_ENTRADA, f, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")}
             dados = {"modelo_escolhido": "xgboost"}
             
-            response = requests.post(f"{URL_API}/prever_lote", files=arquivos, data=dados)
+            # ====== ALTERAÇÃO: Incluído o parâmetro headers=HEADERS_SEGURANCA ======
+            response = requests.post(
+                f"{URL_API}/prever_lote", 
+                files=arquivos, 
+                data=dados, 
+                headers=HEADERS_SEGURANCA
+            )
+            # =======================================================================
         
         if response.status_code == 200:
             previsoes = response.json()["previsoes"]

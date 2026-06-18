@@ -18,6 +18,8 @@ from processamento import preparar_excel_para_modelo
 import sys
 import xgboost as xgb
 from processamento_geo import preparar_dados_para_shipment # Importe a nova função
+from fastapi import FastAPI, Depends, HTTPException, Security, status
+from fastapi.security import APIKeyHeader
 
 sys.modules['XGBRegressor'] = xgb.XGBRegressor
 
@@ -26,6 +28,23 @@ class OpcoesModelo(str, Enum):
     xgb = "xgboost"
 
 app = FastAPI(title="Sistema Logístico v3.2 - JSON & Excel Integrados")
+
+# =====================================================================
+# CONFIGURAÇÃO DA CAMADA DE SEGURANÇA
+# =====================================================================
+API_KEY_NAME = "X-API-Key"
+SUA_SENHA_SECRETA = "Cometrix123"  # <-- Escolha a sua senha aqui
+
+api_key_header = APIKeyHeader(name=API_KEY_NAME, auto_error=False)
+
+async def validar_senha(api_key: str = Security(api_key_header)):
+    if api_key == SUA_SENHA_SECRETA:
+        return api_key
+    
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Acesso negado: Senha inválida ou ausente no cabeçalho X-API-Key."
+    )
 
 app.add_middleware(
     CORSMiddleware,
@@ -48,7 +67,7 @@ except Exception as e:
 # ROTAS JSON (SISTEMAS EXTERNOS)
 # ============================================================
 
-@app.post("/prever_lote_json", tags=["JSON"])
+@app.post("/prever_lote_json", tags=["JSON"], dependencies=[Depends(validar_senha)])
 async def prever_lote_json(dados: List[Dict], modelo_escolhido: OpcoesModelo = OpcoesModelo.xgb):
     """Recebe uma lista de objetos JSON e processa o lote inteiro"""
     try:
@@ -78,7 +97,7 @@ async def prever_lote_json(dados: List[Dict], modelo_escolhido: OpcoesModelo = O
         print(f"Erro Interno JSON Lote: {e}")
         return JSONResponse(status_code=500, content={"erro": str(e)})
 
-@app.post("/prever_situacao_json", tags=["JSON"])
+@app.post("/prever_situacao_json", tags=["JSON"], dependencies=[Depends(validar_senha)])
 async def prever_situacao_json(dados: Dict, modelo_escolhido: OpcoesModelo = OpcoesModelo.xgb):
     """Recebe um único objeto JSON para uma previsão rápida"""
     try:
@@ -107,7 +126,7 @@ async def prever_situacao_json(dados: Dict, modelo_escolhido: OpcoesModelo = Opc
 # ROTAS EXCEL (MANTIDAS PARA COMPATIBILIDADE)
 # ============================================================
 
-@app.post("/prever_lote", tags=["Excel"])
+@app.post("/prever_lote", tags=["Excel"], dependencies=[Depends(validar_senha)])
 async def prever_lote(file: UploadFile = File(...), modelo_escolhido: OpcoesModelo = Form(OpcoesModelo.rf)):
     conteudo = await file.read()
     with open("temp_api_excel.xlsx", "wb") as f:
@@ -122,7 +141,7 @@ async def prever_lote(file: UploadFile = File(...), modelo_escolhido: OpcoesMode
         "previsoes": [int(round(p)) for p in previsoes]
     }
 
-@app.post("/prever_por_linha", tags=["Excel"])
+@app.post("/prever_por_linha", tags=["Excel"], dependencies=[Depends(validar_senha)])
 async def prever_por_linha(
     file: UploadFile = File(...),
     linha: int = Form(...),
@@ -174,7 +193,7 @@ async def prever_por_linha(
 # ============================================================
 from processamento_geo import preparar_dados_para_shipment
 
-@app.post("/prever_rastreio_geo", tags=["Logística Avançada - GEO"])
+@app.post("/prever_rastreio_geo", tags=["Logística Avançada - GEO"], dependencies=[Depends(validar_senha)])
 async def prever_rastreio_geo(dados: Dict):
     try:
         # 1. Processamento dos dados (A função V2 agora retorna a matriz X e o modelo XGB carregado)

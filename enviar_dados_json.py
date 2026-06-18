@@ -4,6 +4,10 @@ import json
 # 1. URL CORRIGIDA: Incluindo o parâmetro de consulta exigido pela API (modelo_escolhido=xgboost)
 URL_API = "http://127.0.0.1:8000/prever_situacao_json?modelo_escolhido=xgboost"
 
+HEADERS_SEGURANCA = {
+    "X-API-Key": "Cometrix123"  # <-- Substitua pela senha que você definiu na API
+}
+
 # 2. Payload exato copiado do sucesso do seu Swagger
 json_bruto_sucesso = """
 {
@@ -37,7 +41,7 @@ dados_logistica = json.loads(json_bruto_sucesso)
 def enviar_teste_logistica_json():
     try:
         print(f"🚀 Enviando dados JSON oficiais para o MODELO 1...")
-        response = requests.post(URL_API, json=dados_logistica)
+        response = requests.post(URL_API, json=dados_logistica, headers=HEADERS_SEGURANCA)
 
         if response.status_code == 200:
             resultado = response.json()
