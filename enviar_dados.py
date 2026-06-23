@@ -4,8 +4,10 @@ import pandas as pd
 # --- CONFIGURAÇÕES ---
 # Toda vez que você ligar o ngrok, mude APENAS esta URL abaixo:
 URL_API = "https://awilda-unfrayed-obliviously.ngrok-free.dev/" 
+# Coloque sua chave de API aqui:
+API_KEY = "Cometrix123"  # <-- Use a mesma senha definida no FastAPI
 # colocar arquivo a ser lido
-ARQUIVO_ENTRADA = "ExemploT1.xlsx"
+ARQUIVO_ENTRADA = "dados.xlsx"  # <-- Coloque o caminho do seu arquivo Excel aqui
 MODELO =  "random_forest"     #"xgboost"  # ou "random_forest"
 
 def solicitar_previsao():
@@ -17,8 +19,9 @@ def solicitar_previsao():
             arquivos = {"file": (ARQUIVO_ENTRADA, f, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")}
             dados = {"modelo_escolhido": MODELO}
             
-            # Envia para a rota
-            response = requests.post(f"{URL_API}/prever_lote", files=arquivos, data=dados)
+            # Envia para a rota com autenticação
+            headers = {"X-API-Key": API_KEY}
+            response = requests.post(f"{URL_API}/prever_lote", files=arquivos, data=dados, headers=headers)
         
         if response.status_code == 200:
             previsoes = response.json()["previsoes"]
